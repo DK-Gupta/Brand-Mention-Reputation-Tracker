@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import connectDB from "./src/config/db.js";
 import mentionRoutes from "./src/routes/mentions.js";
 import alertRoutes from "./src/routes/alerts.js";
-import keywordRoutes from "./src/routes/keywords.js";
+import keywordRoutes from "./src/routes/Keywords.js";
 import { pollKeyword } from "./src/workers/poller.js";
 
 dotenv.config();
