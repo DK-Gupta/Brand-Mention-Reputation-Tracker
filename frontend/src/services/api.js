@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from "axios";
 
-const API_BASE = "https://brand-mention-reputation-tracker-ft6i.onrender.com";
+const API_BASE = "https://brand-mention-reputation-tracker-ft6i.onrender.com/api";
 
 export const searchKeyword = async (query) => {
   return axios.post(`${API_BASE}/search`, { query }); // starts polling
