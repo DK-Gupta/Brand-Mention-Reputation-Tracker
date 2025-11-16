@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { BarChart3, MessageSquare, Globe, Settings, Search } from "lucide-react";
 import MentionsGrid from "../components/MentionsGrid";
 import AlertsPanel from "../components/AlertsPanel";
@@ -24,7 +24,7 @@ const Dashboard = () => {
 
     try {
       await searchKeyword(query);
-      setTimeout(() => fetchLatestMentions(query), 1500);
+      setTimeout(() => fetchLatestMentions(query), 2000); // give backend time to index
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -40,6 +40,7 @@ const Dashboard = () => {
     try {
       const res = await fetchMentions(query);
       setMentions(res.data || []);
+      console.log("Fetched mentions:", res.data); // debug
     } catch (err) {
       console.error(err);
     } finally {
@@ -52,25 +53,6 @@ const Dashboard = () => {
     const interval = setInterval(() => fetchLatestMentions(currentQuery), 15000);
     return () => clearInterval(interval);
   }, [currentQuery]);
-
-  // ➤ Stats calculation
-  const stats = useMemo(() => {
-    let total = 0, positive = 0, negative = 0, neutral = 0, reputationScore = 0;
-    mentions.forEach((m) => {
-      const sentiment = typeof m.sentiment === "object" ? m.sentiment.label : m.sentiment;
-      total += 1;
-      if (sentiment === "positive") {
-        positive += 1;
-        reputationScore += 1;
-      } else if (sentiment === "negative") {
-        negative += 1;
-        reputationScore -= 1;
-      } else {
-        neutral += 1;
-      }
-    });
-    return { total, positive, negative, neutral, reputationScore };
-  }, [mentions]);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -85,40 +67,24 @@ const Dashboard = () => {
           </div>
 
           <nav className="space-y-2">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${
-                activeTab === "dashboard"
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <BarChart3 size={20} />
-              <span className="font-medium">Dashboard</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("mentions")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${
-                activeTab === "mentions"
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <MessageSquare size={20} />
-              <span className="font-medium">Mentions</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("sources")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${
-                activeTab === "sources"
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <Globe size={20} />
-              <span className="font-medium">Sources</span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-all text-left">
+            {[
+              { tab: "dashboard", icon: BarChart3, label: "Dashboard" },
+              { tab: "mentions", icon: MessageSquare, label: "Mentions" },
+              { tab: "sources", icon: Globe, label: "Sources" },
+            ].map(({ tab, icon: Icon, label }) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  activeTab === tab ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <Icon size={20} />
+                <span className="font-medium">{label}</span>
+              </button>
+            ))}
+
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-all">
               <Settings size={20} />
               <span className="font-medium">Settings</span>
             </button>
@@ -126,7 +92,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Main Section */}
+      {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-8 max-w-[1500px] mx-auto">
           {/* Header + Search */}
@@ -134,20 +100,15 @@ const Dashboard = () => {
             <h2 className="text-3xl font-bold text-gray-900">
               {currentQuery || "Enter a brand to track"}
             </h2>
-
             <div className="relative w-full max-w-md">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
                 placeholder="Search brand or keyword"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg bg-white
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -155,7 +116,7 @@ const Dashboard = () => {
           {/* Alerts */}
           {currentQuery && <AlertsPanel query={currentQuery} />}
 
-          {/* Loading Spinner */}
+          {/* Loading */}
           {loading && (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -166,17 +127,26 @@ const Dashboard = () => {
           {/* Dashboard Content */}
           {!loading && currentQuery && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left side */}
+              {/* Left Column */}
               <div className="lg:col-span-2 space-y-8">
-                <StatsCards stats={stats} />
-                <SourceChart mentions={mentions} />
+                <StatsCards mentions={mentions} />
+
+                {/* Chart containers with fixed height to prevent -1/-1 warning */}
+                <div className="w-full h-64">
+                  <SourceChart mentions={mentions} />
+                </div>
+
                 <MentionsGrid mentions={mentions} />
               </div>
 
-              {/* Right side */}
+              {/* Right Column */}
               <div className="space-y-8">
-                <SentimentChart mentions={mentions} />
-                <TimelineChart mentions={mentions} />
+                <div className="w-full h-64">
+                  <SentimentChart mentions={mentions} query={currentQuery} />
+                </div>
+                <div className="w-full h-64">
+                  <TimelineChart mentions={mentions} />
+                </div>
               </div>
             </div>
           )}
@@ -184,10 +154,7 @@ const Dashboard = () => {
           {/* Empty State */}
           {!loading && !currentQuery && (
             <div className="text-center py-20">
-              <MessageSquare
-                className="mx-auto text-gray-300 mb-4"
-                size={64}
-              />
+              <MessageSquare className="mx-auto text-gray-300 mb-4" size={64} />
               <p className="text-gray-500 text-lg">
                 Enter a brand name to start tracking mentions
               </p>

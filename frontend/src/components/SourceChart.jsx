@@ -1,49 +1,24 @@
-// src/components/SourceChart.jsx
-import React, { useMemo } from "react";
-import {
-  PieChart,
-  Pie,
-  Tooltip,
-  Cell,
-  ResponsiveContainer,
-} from "recharts";
-
-const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
+import React from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const SourceChart = ({ mentions }) => {
-  const data = useMemo(() => {
-    const counts = {};
-
-    mentions.forEach((m) => {
-      const src = m.source || "unknown";
-      counts[src] = (counts[src] || 0) + 1;
-    });
-
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [mentions]);
+  const data = mentions.reduce((acc, m) => {
+    const source = m.source || "Unknown";
+    const found = acc.find((d) => d.source === source);
+    if (found) found.count += 1;
+    else acc.push({ source, count: 1 });
+    return acc;
+  }, []);
 
   return (
-    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-      <h3 className="text-lg font-semibold mb-4">Source Breakdown</h3>
-
-      <div style={{ width: "100%", height: 300 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              outerRadius={100}
-              label
-            >
-              {data.map((_, idx) => (
-                <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data}>
+        <XAxis dataKey="source" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="count" fill="#3b82f6" />
+      </BarChart>
+    </ResponsiveContainer>
   );
 };
 

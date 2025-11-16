@@ -1,5 +1,6 @@
 // src/components/SentimentChart.jsx
 import React, { useEffect, useState } from "react";
+import { normalizeSentiment } from "../utils/sentimentUtils";
 
 const SentimentChart = ({ mentions }) => {
   const [sentimentData, setSentimentData] = useState({
@@ -14,19 +15,27 @@ const SentimentChart = ({ mentions }) => {
       return;
     }
 
-    const getLabel = (s) =>
-      typeof s === "object" ? s.label?.toLowerCase() : s?.toLowerCase();
+    const positive = mentions.filter(
+      (m) => normalizeSentiment(m.sentiment) === "positive"
+    ).length;
 
-    setSentimentData({
-      positive: mentions.filter((m) => getLabel(m.sentiment) === "positive").length,
-      neutral: mentions.filter((m) => getLabel(m.sentiment) === "neutral").length,
-      negative: mentions.filter((m) => getLabel(m.sentiment) === "negative").length,
-    });
+    const neutral = mentions.filter(
+      (m) => normalizeSentiment(m.sentiment) === "neutral"
+    ).length;
+
+    const negative = mentions.filter(
+      (m) => normalizeSentiment(m.sentiment) === "negative"
+    ).length;
+
+    setSentimentData({ positive, neutral, negative });
   }, [mentions]);
 
   return (
     <div className="bg-white rounded-xl p-6 border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Summary</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Sentiment Summary
+      </h3>
+
       <div className="space-y-4">
         <div className="bg-emerald-500 rounded-lg p-5 text-white">
           <p className="text-3xl font-bold">{sentimentData.positive}</p>
